@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>SketchPad</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: #1c1c1e; overflow: hidden; }
+
+    #app {
+      display: flex; flex-direction: column; height: 100vh;
+      max-width: 480px; margin: 0 auto;
+    }
+
+    /* Top toolbar */
+    #toolbar-top {
+      background: #2c2c2e;
+      padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #3a3a3c;
+      flex-shrink: 0;
+    }
+    .app-title { color: #fff; font-family: -apple-system, sans-serif; font-size: 16px; font-weight: 600; }
+    .tool-icons { display: flex; gap: 8px; }
+    .tool-icon {
+      width: 34px; height: 34px; background: #3a3a3c; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #ccc; cursor: default;
+    }
+
+    /* Canvas area */
+    #canvas-area {
+      flex: 1; background: #f5f0e8;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative;
+    }
+    #sketch-wrap {
+      width: min(90vw, 380px);
+      height: min(60vh, 380px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #sketch-wrap svg { width: 100%; height: 100%; }
+
+    /* Bottom toolbar */
+    #toolbar-bottom {
+      background: #2c2c2e;
+      padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid #3a3a3c;
+      flex-shrink: 0;
+    }
+    .swatches { display: flex; gap: 8px; align-items: center; }
+    .swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #555; }
+    #erase-btn {
+      background: #c0392b; color: #fff;
+      border: none; border-radius: 10px;
+      padding: 8px 18px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: -apple-system, sans-serif;
+      transition: opacity 0.15s;
+    }
+    #erase-btn:active { opacity: 0.75; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="toolbar-top">
+    <span class="app-title">✏️ SketchPad</span>
+    <div class="tool-icons">
+      <div class="tool-icon">🖊</div>
+      <div class="tool-icon">🖌</div>
+      <div class="tool-icon">◯</div>
+    </div>
+  </div>
+
+  <div id="canvas-area">
+    <div id="sketch-wrap"></div>
+  </div>
+
+  <div id="toolbar-bottom">
+    <div class="swatches">
+      <div class="swatch" style="background:#2c2c2c"></div>
+      <div class="swatch" style="background:#6b4f3a"></div>
+      <div class="swatch" style="background:#888"></div>
+    </div>
+    <button id="erase-btn">🗑 Erase</button>
+  </div>
+</div>
+
+<script>
+const FIREBASE_URL = 'https://magictrick-5fc12-default-rtdb.firebaseio.com';
+
+// ── Hand-drawn SVG sketches ───────────────────────────────────────
+// Each uses wobbly bezier curves + ghost duplicate strokes for pencil feel.
+// ViewBox 0 0 160 150. stroke-linecap/join round throughout.
+
+const SKETCHES = {
+
+house: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80,16 Q52,44 21,73" stroke-width="3"/>
+    <path d="M80,16 Q108,44 139,73" stroke-width="3"/>
+    <path d="M21,73 Q21,106 22,138 Q80,139 138,137 Q139,104 139,73" stroke-width="3"/>
+    <path d="M80,16 Q52,44 20,72" stroke-width="1.2" opacity="0.25"/>
+    <path d="M80,16 Q109,45 140,72" stroke-width="1.2" opacity="0.25"/>
+    <path d="M20,72 L20,139 L140,138 L140,72" stroke-width="1" opacity="0.2"/>
+    <path d="M62,138 Q61,112 62,97 Q71,87 80,92 Q89,87 98,97 Q99,114 98,138" stroke-width="2.5"/>
+    <path d="M27,89 Q27,89 28,102 Q36,103 49,102 Q50,95 49,89 Q37,88 27,89" stroke-width="2"/>
+    <line x1="38" y1="89" x2="38.5" y2="102" stroke-width="1.8"/>
+    <line x1="27" y1="95.5" x2="49" y2="96" stroke-width="1.8"/>
+    <path d="M111,89 Q111,89 112,102 Q120,103 133,102 Q134,95 133,89 Q121,88 111,89" stroke-width="2"/>
+    <line x1="122" y1="89" x2="122.5" y2="102" stroke-width="1.8"/>
+    <line x1="111" y1="95.5" x2="133" y2="96" stroke-width="1.8"/>
+  </g>
+</svg>`,
+
+flower: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round">
+    <ellipse cx="80" cy="38" rx="14" ry="20" stroke-width="2.5"/>
+    <ellipse cx="80" cy="38" rx="14" ry="20" stroke-width="1" opacity="0.2" transform="translate(1.5,1)"/>
+    <ellipse cx="80" cy="86" rx="14" ry="20" stroke-width="2.5"/>
+    <ellipse cx="80" cy="86" rx="14" ry="20" stroke-width="1" opacity="0.2" transform="translate(-1,1)"/>
+    <ellipse cx="50" cy="45" rx="14" ry="20" transform="rotate(-60 50 45)" stroke-width="2.5"/>
+    <ellipse cx="110" cy="45" rx="14" ry="20" transform="rotate(60 110 45)" stroke-width="2.5"/>
+    <ellipse cx="50" cy="77" rx="14" ry="20" transform="rotate(60 50 77)" stroke-width="2.5"/>
+    <ellipse cx="110" cy="77" rx="14" ry="20" transform="rotate(-60 110 77)" stroke-width="2.5"/>
+    <circle cx="80" cy="62" r="16" fill="#f5f0e8" stroke="#2c2c2c" stroke-width="2.8"/>
+    <circle cx="80" cy="62" r="16" stroke-width="1" opacity="0.2" transform="translate(1,0.5)"/>
+    <path d="M80,78 Q81,102 80,128" stroke-width="2.5"/>
+    <path d="M80,102 Q64,96 58,106" stroke-width="2"/>
+    <path d="M80,102 Q96,96 102,106" stroke-width="2"/>
+  </g>
+</svg>`,
+
+tree: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80,10 Q116,14 122,44 Q130,76 108,88 Q96,100 80,94 Q64,100 52,88 Q30,76 38,44 Q44,14 80,10 Z" stroke-width="3"/>
+    <path d="M80,10 Q118,16 124,46 Q132,78 110,90 Q96,101 80,95" stroke-width="1" opacity="0.2"/>
+    <path d="M71,91 Q70,112 71,136 L89,136 Q90,112 89,91" stroke-width="2.8"/>
+    <path d="M70,90 Q69,112 70,137 L90,137" stroke-width="1" opacity="0.2"/>
+  </g>
+</svg>`,
+
+car: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12,88 Q12,88 13,106 Q13,116 22,116 L138,115 Q147,115 147,105 L148,88" stroke-width="3"/>
+    <path d="M12,87 Q13,107 14,117 L138,116" stroke-width="1" opacity="0.2"/>
+    <path d="M22,88 L34,56 Q37,50 46,50 L114,50 Q123,50 126,56 L138,88 Z" stroke-width="3"/>
+    <path d="M22,88 L35,57 Q38,51 47,51 L113,51" stroke-width="1" opacity="0.2"/>
+    <circle cx="40" cy="116" r="16" stroke-width="2.8"/>
+    <circle cx="40" cy="116" r="16" stroke-width="1" opacity="0.2" transform="translate(1,0.5)"/>
+    <circle cx="120" cy="116" r="16" stroke-width="2.8"/>
+    <circle cx="120" cy="116" r="16" stroke-width="1" opacity="0.2" transform="translate(-0.5,1)"/>
+    <path d="M44,54 Q44,54 45,68 Q58,69 72,68 Q73,61 72,54 Q58,53 44,54" stroke-width="2.2"/>
+    <path d="M88,54 Q88,54 89,68 Q102,69 116,68 Q117,61 116,54 Q102,53 88,54" stroke-width="2.2"/>
+  </g>
+</svg>`,
+
+airplane: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10,72 Q46,56 86,66 L142,66 Q154,66 154,74 Q154,82 142,82 L86,82 Q46,90 10,74 Z" stroke-width="3"/>
+    <path d="M10,72 Q46,56 86,66 L142,66" stroke-width="1" opacity="0.2"/>
+    <path d="M32,66 L46,40 L64,40 L54,66" stroke-width="2.8"/>
+    <path d="M32,67 L47,41 L65,41" stroke-width="1" opacity="0.2"/>
+    <path d="M32,82 L46,108 L64,108 L54,82" stroke-width="2.8"/>
+    <path d="M112,66 L118,52 L132,52 L126,66" stroke-width="2.5"/>
+    <circle cx="136" cy="74" r="7" fill="#2c2c2c"/>
+    <circle cx="136" cy="74" r="7" stroke-width="1.5" opacity="0.25"/>
+  </g>
+</svg>`,
+
+star: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80,10 Q85,38 93,52 L148,54 Q126,72 112,84 Q120,114 124,136 Q102,120 80,108 Q58,120 36,136 Q40,114 48,84 Q34,72 12,54 L67,52 Q75,38 80,10 Z" stroke-width="3"/>
+    <path d="M80,10 Q85,40 94,53 L150,55" stroke-width="1" opacity="0.2"/>
+    <path d="M12,54 L68,53 Q75,39 80,10" stroke-width="1" opacity="0.18"/>
+  </g>
+</svg>`,
+
+sun: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round">
+    <circle cx="80" cy="74" r="30" stroke-width="3"/>
+    <circle cx="80" cy="74" r="30" stroke-width="1" opacity="0.2" transform="translate(1,0.5)"/>
+    <line x1="80" y1="10" x2="80.5" y2="28" stroke-width="2.8"/>
+    <line x1="80" y1="120" x2="79.5" y2="138" stroke-width="2.8"/>
+    <line x1="16" y1="74" x2="34" y2="73.5" stroke-width="2.8"/>
+    <line x1="126" y1="74" x2="144" y2="74.5" stroke-width="2.8"/>
+    <line x1="34" y1="28" x2="47" y2="41" stroke-width="2.8"/>
+    <line x1="113" y1="107" x2="126" y2="120" stroke-width="2.8"/>
+    <line x1="126" y1="28" x2="113" y2="41" stroke-width="2.8"/>
+    <line x1="47" y1="107" x2="34" y2="120" stroke-width="2.8"/>
+  </g>
+</svg>`,
+
+heart: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80,124 Q46,96 20,66 Q6,28 36,20 Q56,14 80,42 Q104,14 124,20 Q154,28 140,66 Q114,96 80,124 Z" stroke-width="3"/>
+    <path d="M80,124 Q44,95 18,64 Q4,26 36,18" stroke-width="1" opacity="0.2"/>
+    <path d="M80,42 Q104,14 126,20 Q156,30 140,68" stroke-width="1" opacity="0.2"/>
+  </g>
+</svg>`,
+
+smiley: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round">
+    <circle cx="80" cy="74" r="58" stroke-width="3"/>
+    <circle cx="80" cy="74" r="58" stroke-width="1" opacity="0.2" transform="translate(1.5,1)"/>
+    <circle cx="58" cy="60" r="6" fill="#2c2c2c"/>
+    <circle cx="102" cy="60" r="6" fill="#2c2c2c"/>
+    <path d="M46,90 Q80,118 114,90" stroke-width="3"/>
+    <path d="M46,90 Q80,120 114,90" stroke-width="1" opacity="0.2"/>
+  </g>
+</svg>`,
+
+clock: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round">
+    <circle cx="80" cy="74" r="58" stroke-width="3"/>
+    <circle cx="80" cy="74" r="58" stroke-width="1" opacity="0.2" transform="translate(1,0.8)"/>
+    <line x1="80" y1="74" x2="54" y2="38" stroke-width="3.5"/>
+    <line x1="80" y1="74" x2="112" y2="56" stroke-width="2.8"/>
+    <circle cx="80" cy="74" r="5" fill="#2c2c2c"/>
+    <line x1="80" y1="17" x2="80.5" y2="26" stroke-width="2.5"/>
+    <line x1="80" y1="122" x2="79.5" y2="131" stroke-width="2.5"/>
+    <line x1="23" y1="74" x2="32" y2="74.5" stroke-width="2.5"/>
+    <line x1="128" y1="74" x2="137" y2="73.5" stroke-width="2.5"/>
+    <line x1="38" y1="30" x2="44" y2="36" stroke-width="2"/>
+    <line x1="122" y1="30" x2="116" y2="36" stroke-width="2"/>
+    <line x1="38" y1="118" x2="44" y2="112" stroke-width="2"/>
+    <line x1="122" y1="118" x2="116" y2="112" stroke-width="2"/>
+  </g>
+</svg>`,
+
+stickman: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round">
+    <circle cx="80" cy="22" r="18" stroke-width="3"/>
+    <circle cx="80" cy="22" r="18" stroke-width="1" opacity="0.2" transform="translate(1,0.5)"/>
+    <line x1="80" y1="40" x2="80.5" y2="94" stroke-width="3"/>
+    <line x1="79" y1="40" x2="79" y2="94" stroke-width="1" opacity="0.2"/>
+    <line x1="80" y1="58" x2="44" y2="38" stroke-width="3"/>
+    <line x1="80" y1="58" x2="116" y2="38" stroke-width="3"/>
+    <line x1="80" y1="94" x2="52" y2="132" stroke-width="3"/>
+    <line x1="80" y1="94" x2="108" y2="132" stroke-width="3"/>
+    <line x1="81" y1="95" x2="53" y2="133" stroke-width="1" opacity="0.2"/>
+  </g>
+</svg>`,
+
+rocket: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80,6 Q106,20 106,62 L106,100 Q94,110 80,110 Q66,110 54,100 L54,62 Q54,20 80,6 Z" stroke-width="3"/>
+    <path d="M80,6 Q108,22 108,64 L108,102" stroke-width="1" opacity="0.2"/>
+    <path d="M54,90 L34,114 L34,102 L54,100" stroke-width="2.8"/>
+    <path d="M106,90 L126,114 L126,102 L106,100" stroke-width="2.8"/>
+    <path d="M66,110 Q80,132 94,110" stroke-width="2.8"/>
+    <path d="M66,110 Q80,134 94,110" stroke-width="1" opacity="0.2"/>
+    <circle cx="80" cy="48" r="12" stroke-width="2.5"/>
+    <circle cx="80" cy="48" r="12" stroke-width="1" opacity="0.2" transform="translate(0.5,0.5)"/>
+  </g>
+</svg>`,
+};
+
+// ── Firebase SSE ──────────────────────────────────────────────────
+const wrap = document.getElementById('sketch-wrap');
+let currentKey = null;
+let es = null;
+
+function showSketch(key) {
+  currentKey = key;
+  wrap.innerHTML = key && SKETCHES[key] ? SKETCHES[key] : '';
+}
+
+function startListening() {
+  if (es) es.close();
+  es = new EventSource(`${FIREBASE_URL}/learnToDraw/selection.json`);
+
+  es.addEventListener('put', e => {
+    try {
+      const val = JSON.parse(e.data).data;
+      showSketch(val || null);
+    } catch {}
+  });
+
+  es.addEventListener('patch', e => {
+    try {
+      const val = JSON.parse(e.data).data;
+      showSketch(val || null);
+    } catch {}
+  });
+
+  es.onerror = () => {
+    es.close();
+    setTimeout(startListening, 3000);
+  };
+}
+
+// ── Erase ─────────────────────────────────────────────────────────
+document.getElementById('erase-btn').addEventListener('click', () => {
+  fetch(`${FIREBASE_URL}/learnToDraw.json`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ selection: null })
+  }).catch(() => {});
+  showSketch(null);
+});
+
+// ── Reset on tab show (re-read Firebase state) ────────────────────
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') startListening();
+});
+
+startListening();
+</script>
+</body>
+</html>
