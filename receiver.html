@@ -24,12 +24,6 @@
       flex-shrink: 0;
     }
     .app-title { color: #fff; font-family: -apple-system, sans-serif; font-size: 16px; font-weight: 600; }
-    .tool-icons { display: flex; gap: 8px; }
-    .tool-icon {
-      width: 34px; height: 34px; background: #3a3a3c; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #ccc; cursor: default;
-    }
 
     /* Canvas area */
     #canvas-area {
@@ -44,16 +38,6 @@
     }
     #sketch-wrap svg { width: 100%; height: 100%; }
 
-    /* Bottom toolbar */
-    #toolbar-bottom {
-      background: #2c2c2e;
-      padding: 10px 14px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-top: 1px solid #3a3a3c;
-      flex-shrink: 0;
-    }
-    .swatches { display: flex; gap: 8px; align-items: center; }
-    .swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #555; }
     #erase-btn {
       background: #c0392b; color: #fff;
       border: none; border-radius: 10px;
@@ -68,25 +52,13 @@
 <div id="app">
   <div id="toolbar-top">
     <span class="app-title">✏️ SketchPad</span>
-    <div class="tool-icons">
-      <div class="tool-icon">🖊</div>
-      <div class="tool-icon">🖌</div>
-      <div class="tool-icon">◯</div>
-    </div>
+    <button id="erase-btn">🗑 Erase</button>
   </div>
 
   <div id="canvas-area">
     <div id="sketch-wrap"></div>
   </div>
 
-  <div id="toolbar-bottom">
-    <div class="swatches">
-      <div class="swatch" style="background:#2c2c2c"></div>
-      <div class="swatch" style="background:#6b4f3a"></div>
-      <div class="swatch" style="background:#888"></div>
-    </div>
-    <button id="erase-btn">🗑 Erase</button>
-  </div>
 </div>
 
 <script>
