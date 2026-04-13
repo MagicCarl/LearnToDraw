@@ -38,6 +38,12 @@
     }
     #sketch-wrap svg { width: 100%; height: 100%; }
 
+    #drawing-canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      cursor: crosshair; touch-action: none;
+    }
+
     #erase-btn {
       background: #c0392b; color: #fff;
       border: none; border-radius: 10px;
@@ -57,6 +63,7 @@
 
   <div id="canvas-area">
     <div id="sketch-wrap"></div>
+    <canvas id="drawing-canvas"></canvas>
   </div>
 
 </div>
@@ -322,8 +329,40 @@ function startListening() {
   };
 }
 
+// ── Drawing canvas ────────────────────────────────────────────────
+const canvas = document.getElementById('drawing-canvas');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  canvas.width = area.offsetWidth;
+  canvas.height = area.offsetHeight;
+  ctx.strokeStyle = '#2c2c2c';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+}
+
+canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove', e => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+canvas.addEventListener('mouseup', () => { drawing = false; });
+canvas.addEventListener('mouseleave', () => { drawing = false; });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); }, { passive: false });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
+canvas.addEventListener('touchend', () => { drawing = false; });
+
 // ── Erase ─────────────────────────────────────────────────────────
 document.getElementById('erase-btn').addEventListener('click', () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   fetch(`${FIREBASE_URL}/learnToDraw.json`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
