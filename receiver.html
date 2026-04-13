@@ -4,64 +4,94 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <title>SketchPad</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>SketchPad - Prediction</title>
   <style>
+    :root {
+      --bg-app: #1c1c1e;
+      --canvas-bg: #fdfdfd;
+      --stroke-color: #1a1a1c;
+      --accent: #007aff;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { height: 100%; background: #1c1c1e; overflow: hidden; }
+    html, body { height: 100%; background: var(--bg-app); font-family: -apple-system, system-ui, sans-serif; overflow: hidden; }
 
     #app {
       display: flex; flex-direction: column; height: 100vh;
-      max-width: 480px; margin: 0 auto;
+      max-width: 500px; margin: 0 auto;
+      background: var(--bg-app);
     }
 
-    /* Top toolbar */
     #toolbar-top {
-      background: #2c2c2e;
-      padding: 10px 14px;
+      background: rgba(28, 28, 30, 0.9);
+      backdrop-filter: blur(25px);
+      padding: 14px 20px;
       display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid #3a3a3c;
+      border-bottom: 0.5px solid rgba(255,255,255,0.1);
       flex-shrink: 0;
+      z-index: 10;
     }
-    .app-title { color: #fff; font-family: -apple-system, sans-serif; font-size: 16px; font-weight: 600; }
+    .app-title { color: #fff; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
 
-    /* Canvas area */
     #canvas-area {
-      flex: 1; background: #f5f0e8;
+      flex: 1;
+      background: var(--canvas-bg);
       display: flex; align-items: center; justify-content: center;
       overflow: hidden; position: relative;
     }
-    #sketch-wrap {
-      width: min(90vw, 380px);
-      height: min(60vh, 380px);
-      display: flex; align-items: center; justify-content: center;
+    
+    /* Less prominent grid for a more "freehand" canvas feel */
+    #canvas-area::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background-image: radial-gradient(#efefef 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.8; pointer-events: none;
     }
-    #sketch-wrap svg { width: 100%; height: 100%; }
+
+    #sketch-wrap {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #sketch-wrap svg {
+      width: 100%; height: 100%;
+      max-width: 280px; max-height: 280px;
+      /* Subtle lift to look like it's on the digital "surface" */
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+    }
 
     #drawing-canvas {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       cursor: crosshair; touch-action: none;
+      z-index: 5;
     }
 
     #erase-btn {
-      background: #c0392b; color: #fff;
-      border: none; border-radius: 10px;
-      padding: 8px 18px; font-size: 14px; font-weight: 700;
-      cursor: pointer; font-family: -apple-system, sans-serif;
-      transition: opacity 0.15s;
+      background: transparent; color: var(--accent);
+      border: none; font-size: 17px; font-weight: 400;
+      cursor: pointer;
     }
-    #erase-btn:active { opacity: 0.75; }
+    #erase-btn:active { opacity: 0.4; }
+
+    .empty-state {
+      color: #999; font-size: 15px;
+      position: absolute; pointer-events: none;
+      text-align: center; font-weight: 400;
+    }
   </style>
 </head>
 <body>
 <div id="app">
   <div id="toolbar-top">
-    <span class="app-title">✏️ SketchPad</span>
-    <button id="erase-btn">🗑 Erase</button>
+    <button id="erase-btn">Clear</button>
+    <span class="app-title">Prediction</span>
+    <div style="width: 40px;"></div>
   </div>
 
   <div id="canvas-area">
+    <div class="empty-state">Waiting for prediction...</div>
     <div id="sketch-wrap"></div>
     <canvas id="drawing-canvas"></canvas>
   </div>
@@ -71,238 +101,140 @@
 <script>
 const FIREBASE_URL = 'https://magictrick-5fc12-default-rtdb.firebaseio.com';
 
-// ── Hand-drawn SVG sketches ───────────────────────────────────────
-// Each uses wobbly bezier curves + ghost duplicate strokes for pencil feel.
-// ViewBox 0 0 160 150. stroke-linecap/join round throughout.
-
-// SVG displacement filter trick: feTurbulence + feDisplacementMap warps rendered pixels
-// with fractal noise, making every shape — circles, lines, everything — look genuinely hand-drawn.
-// Only one sketch is shown at a time so duplicate filter id="p" is safe.
+// ── Organic "Finger-Drawn" Sketches ───────────────────────────────
+// Using wobbly paths, offsets, and imperfect curves to mimic human drawing.
+// Filter "w" adds a global digital wobble to the strokes.
 const SKETCHES = {
+  house: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round">
+    <defs><filter id="w" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M28,82 Q55,55 81,32 Q108,58 133,83" />
+      <path d="M42,85 L38,134 L122,138 L119,82" />
+      <path d="M68,136 L70,108 Q82,103 94,106 L92,135" />
+      <path d="M104,33 L102,52" />
+    </g>
+  </svg>`,
 
-house: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="3" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M80,14 L19,73" stroke-width="3.2"/>
-    <path d="M80,14 L141,73" stroke-width="3.2"/>
-    <path d="M19,73 L19,138 L141,137 L141,73" stroke-width="3"/>
-    <path d="M20,72 L20,139 L140,138 L140,72" stroke-width="1" opacity="0.28"/>
-    <path d="M63,138 L63,98 Q71,88 80,93 Q89,88 97,98 L97,138" stroke-width="2.5"/>
-    <path d="M27,88 L27,103 L48,103 L48,88 Z" stroke-width="2.1"/>
-    <path d="M37.5,88 L37.5,103" stroke-width="1.9"/>
-    <path d="M27,95.5 L48,95.5" stroke-width="1.9"/>
-    <path d="M112,88 L112,103 L133,103 L133,88 Z" stroke-width="2.1"/>
-    <path d="M122.5,88 L122.5,103" stroke-width="1.9"/>
-    <path d="M112,95.5 L133,95.5" stroke-width="1.9"/>
-  </g>
-</svg>`,
+  flower: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="1"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M72,78 Q78,70 88,74 Q92,84 84,92 Q72,94 62,88 Q62,75 72,78 Z" /> <!-- center -->
+      <path d="M75,70 Q70,45 85,42 Q100,45 92,68" /> <!-- petal 1 -->
+      <path d="M95,78 Q120,70 125,85 Q120,105 98,92" /> <!-- petal 2 -->
+      <path d="M85,95 Q95,120 80,125 Q65,120 72,98" /> <!-- petal 3 -->
+      <path d="M65,88 Q40,100 35,85 Q40,65 65,75" /> <!-- petal 4 -->
+      <path d="M78,125 Q82,145 78,155" /> <!-- stem -->
+    </g>
+  </svg>`,
 
-flower: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="7" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
-    <ellipse cx="80" cy="35" rx="13" ry="20" stroke-width="2.5"/>
-    <ellipse cx="80" cy="89" rx="13" ry="20" stroke-width="2.5"/>
-    <ellipse cx="49" cy="43" rx="13" ry="20" transform="rotate(-60 49 43)" stroke-width="2.5"/>
-    <ellipse cx="111" cy="43" rx="13" ry="20" transform="rotate(60 111 43)" stroke-width="2.5"/>
-    <ellipse cx="49" cy="81" rx="13" ry="20" transform="rotate(60 49 81)" stroke-width="2.5"/>
-    <ellipse cx="111" cy="81" rx="13" ry="20" transform="rotate(-60 111 81)" stroke-width="2.5"/>
-    <circle cx="80" cy="62" r="17" fill="#f5f0e8" stroke="#2c2c2c" stroke-width="2.8"/>
-    <circle cx="80" cy="62" r="17" stroke-width="1" opacity="0.25" transform="translate(1.5,1)"/>
-    <path d="M80,79 Q81,104 80,130" stroke-width="2.5"/>
-    <path d="M80,104 Q64,97 59,107" stroke-width="2"/>
-    <path d="M80,104 Q96,97 101,107" stroke-width="2"/>
-  </g>
-</svg>`,
+  tree: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6.2" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="9"/><feDisplacementMap in="SourceGraphic" scale="7"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M80,30 Q110,32 120,60 Q130,95 90,105 Q75,115 50,100 Q30,85 40,55 Q55,30 80,30 Z" />
+      <path d="M74,103 L70,145 M88,103 L92,142" />
+    </g>
+  </svg>`,
 
-tree: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="4" seed="11" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M80,10 Q118,14 124,44 Q130,78 108,90 Q96,100 80,94 Q64,100 52,90 Q30,78 36,44 Q42,14 80,10 Z" stroke-width="3"/>
-    <path d="M80,10 Q120,16 126,46 Q132,80 110,92" stroke-width="1" opacity="0.25"/>
-    <path d="M72,92 L72,138 L88,138 L88,92" stroke-width="2.8"/>
-    <path d="M71,91 L71,139 L89,139" stroke-width="1" opacity="0.2"/>
-  </g>
-</svg>`,
+  car: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="2"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M22,98 L25,118 Q75,125 138,118 L142,97" />
+      <path d="M32,95 L48,68 Q80,62 112,68 L131,95" />
+      <path d="M42,108 Q45,135 62,128 Q75,115 58,105 Q45,100 42,108 Z" /> <!-- wheel 1 -->
+      <path d="M105,108 Q108,135 125,128 Q138,115 121,105 Q108,100 105,108 Z" /> <!-- wheel 2 -->
+    </g>
+  </svg>`,
 
-car: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="2" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M12,88 L12,112 Q12,120 22,120 L138,120 Q148,120 148,112 L148,88" stroke-width="3"/>
-    <path d="M22,88 L34,56 Q37,50 46,50 L114,50 Q123,50 126,56 L138,88 Z" stroke-width="3"/>
-    <path d="M22,87 L35,55 Q38,49 47,49 L113,49" stroke-width="1" opacity="0.22"/>
-    <circle cx="40" cy="120" r="16" stroke-width="2.8"/>
-    <circle cx="40" cy="120" r="16" stroke-width="1" opacity="0.25" transform="translate(1.5,1)"/>
-    <circle cx="120" cy="120" r="16" stroke-width="2.8"/>
-    <circle cx="120" cy="120" r="16" stroke-width="1" opacity="0.25" transform="translate(-1,1)"/>
-    <path d="M44,54 L44,69 L72,69 L72,54 Z" stroke-width="2.2"/>
-    <path d="M88,54 L88,69 L116,69 L116,54 Z" stroke-width="2.2"/>
-  </g>
-</svg>`,
+  airplane: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M25,85 Q82,65 145,82 Q82,105 25,85 Z" />
+      <path d="M65,72 L58,40 Q75,35 85,38 L80,68" />
+      <path d="M68,95 L62,125 Q78,130 88,126 L84,98" />
+      <path d="M128,78 L142,62 L152,82 L143,102 Z" />
+    </g>
+  </svg>`,
 
-airplane: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="9" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M10,72 Q46,56 86,66 L142,66 Q154,66 154,74 Q154,82 142,82 L86,82 Q46,90 10,76 Z" stroke-width="3"/>
-    <path d="M10,72 Q46,56 86,66 L142,66 Q154,66 154,74" stroke-width="1" opacity="0.22"/>
-    <path d="M32,66 L46,40 L64,40 L54,66" stroke-width="2.8"/>
-    <path d="M31,67 L47,41 L65,41" stroke-width="1" opacity="0.22"/>
-    <path d="M32,82 L46,108 L64,108 L54,82" stroke-width="2.8"/>
-    <path d="M112,66 L118,52 L132,52 L126,66" stroke-width="2.5"/>
-    <circle cx="136" cy="74" r="7" fill="#2c2c2c"/>
-  </g>
-</svg>`,
+  star: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="12"/><feDisplacementMap in="SourceGraphic" scale="8"/></filter></defs>
+    <path filter="url(#w)" d="M80,18 L96,62 L142,65 L106,94 L120,138 L82,110 L44,138 L57,94 L22,65 L65,62 Z" />
+  </svg>`,
 
-star: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="5" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M80,10 Q85,38 93,52 L148,54 Q126,72 112,84 Q120,114 124,136 Q102,120 80,108 Q58,120 36,136 Q40,114 48,84 Q34,72 12,54 L67,52 Q75,38 80,10 Z" stroke-width="3"/>
-    <path d="M80,10 Q85,40 94,53 L150,56" stroke-width="1" opacity="0.2"/>
-    <path d="M11,54 L68,52 Q75,38 80,10" stroke-width="1" opacity="0.18"/>
-  </g>
-</svg>`,
+  sun: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="3"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M60,65 Q80,50 100,70 Q115,90 90,105 Q65,115 55,90 Q50,75 60,65 Z" />
+      <path d="M82,22 L78,45 M82,118 L78,142 M22,82 L45,78 M118,82 L142,78 M42,42 L55,55 M112,112 L125,125 M122,42 L108,55 M52,118 L38,132" />
+    </g>
+  </svg>`,
 
-sun: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="1" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
-    <circle cx="80" cy="74" r="30" stroke-width="3"/>
-    <circle cx="80" cy="74" r="30" stroke-width="1" opacity="0.25" transform="translate(1.5,0.5)"/>
-    <line x1="80" y1="10" x2="80" y2="28" stroke-width="2.8"/>
-    <line x1="80" y1="120" x2="80" y2="138" stroke-width="2.8"/>
-    <line x1="16" y1="74" x2="34" y2="74" stroke-width="2.8"/>
-    <line x1="126" y1="74" x2="144" y2="74" stroke-width="2.8"/>
-    <line x1="34" y1="28" x2="47" y2="41" stroke-width="2.8"/>
-    <line x1="113" y1="107" x2="126" y2="120" stroke-width="2.8"/>
-    <line x1="126" y1="28" x2="113" y2="41" stroke-width="2.8"/>
-    <line x1="47" y1="107" x2="34" y2="120" stroke-width="2.8"/>
-  </g>
-</svg>`,
+  heart: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
+    <defs><filter id="f"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="8"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter></defs>
+    <path filter="url(#f)" d="M80,128 Q30,95 25,60 Q22,25 55,22 Q75,22 80,45 Q85,22 105,22 Q138,25 135,60 Q130,95 80,128 Z" />
+  </svg>`,
 
-heart: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="4" seed="8" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="10" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M80,124 Q46,96 20,66 Q6,28 36,20 Q56,14 80,42 Q104,14 124,20 Q154,28 140,66 Q114,96 80,124 Z" stroke-width="3"/>
-    <path d="M80,124 Q44,95 18,64 Q4,26 36,18" stroke-width="1.1" opacity="0.27"/>
-    <path d="M80,42 Q104,14 126,20 Q156,30 140,68" stroke-width="1.1" opacity="0.27"/>
-  </g>
-</svg>`,
+  smiley: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="4"/><feDisplacementMap in="SourceGraphic" scale="8"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M30,80 Q30,30 80,30 Q130,30 130,80 Q130,130 80,130 Q30,130 30,80 Z" />
+      <path d="M62,68 L64,72 M102,68 L104,72" stroke-width="8" />
+      <path d="M55,95 Q80,122 110,95" stroke-width="6.5" />
+    </g>
+  </svg>`,
 
-smiley: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="4" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
-    <circle cx="80" cy="74" r="58" stroke-width="3"/>
-    <circle cx="80" cy="74" r="58" stroke-width="1.1" opacity="0.25" transform="translate(1.5,1)"/>
-    <circle cx="58" cy="60" r="6" fill="#2c2c2c"/>
-    <circle cx="102" cy="60" r="6" fill="#2c2c2c"/>
-    <path d="M46,90 Q80,118 114,90" stroke-width="3"/>
-    <path d="M46,90 Q80,120 114,90" stroke-width="1.1" opacity="0.25"/>
-  </g>
-</svg>`,
+  clock: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="6"/><feDisplacementMap in="SourceGraphic" scale="7"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M35,80 Q35,35 80,35 Q125,35 125,80 Q125,125 80,125 Q35,125 35,80 Z" />
+      <path d="M80,80 L84,52 M80,80 L112,88" stroke-width="7" />
+      <path d="M80,45 L80,52 M80,108 L80,115 M45,80 L52,80 M108,80 L115,80" />
+    </g>
+  </svg>`,
 
-clock: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="6" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
-    <circle cx="80" cy="74" r="58" stroke-width="3"/>
-    <circle cx="80" cy="74" r="58" stroke-width="1.1" opacity="0.25" transform="translate(1,1)"/>
-    <line x1="80" y1="74" x2="54" y2="38" stroke-width="3.5"/>
-    <line x1="80" y1="74" x2="112" y2="56" stroke-width="2.8"/>
-    <circle cx="80" cy="74" r="5" fill="#2c2c2c"/>
-    <line x1="80" y1="17" x2="80" y2="26" stroke-width="2.5"/>
-    <line x1="80" y1="122" x2="80" y2="131" stroke-width="2.5"/>
-    <line x1="23" y1="74" x2="32" y2="74" stroke-width="2.5"/>
-    <line x1="128" y1="74" x2="137" y2="74" stroke-width="2.5"/>
-    <line x1="38" y1="30" x2="44" y2="36" stroke-width="2"/>
-    <line x1="122" y1="30" x2="116" y2="36" stroke-width="2"/>
-    <line x1="38" y1="118" x2="44" y2="112" stroke-width="2"/>
-    <line x1="122" y1="118" x2="116" y2="112" stroke-width="2"/>
-  </g>
-</svg>`,
+  stickman: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6.2" stroke-linecap="round">
+    <defs><filter id="w"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="12"/><feDisplacementMap in="SourceGraphic" scale="8"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M72,30 Q70,18 80,15 Q95,18 92,30 Q90,45 80,48 Q65,45 72,30 Z" /> <!-- head -->
+      <path d="M82,48 L78,105" /> <!-- body -->
+      <path d="M80,68 L52,55 M80,68 L114,58" /> <!-- arms -->
+      <path d="M78,105 L58,142 M78,105 L102,138" /> <!-- legs -->
+    </g>
+  </svg>`,
 
-stickman: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="12" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
-    <circle cx="80" cy="22" r="18" stroke-width="3"/>
-    <circle cx="80" cy="22" r="18" stroke-width="1.1" opacity="0.25" transform="translate(1,0.5)"/>
-    <line x1="80" y1="40" x2="80" y2="94" stroke-width="3"/>
-    <line x1="79" y1="40" x2="79" y2="94" stroke-width="1" opacity="0.2"/>
-    <line x1="80" y1="58" x2="44" y2="38" stroke-width="3"/>
-    <line x1="80" y1="58" x2="116" y2="38" stroke-width="3"/>
-    <line x1="80" y1="94" x2="52" y2="132" stroke-width="3"/>
-    <line x1="80" y1="94" x2="108" y2="132" stroke-width="3"/>
-    <line x1="81" y1="95" x2="53" y2="133" stroke-width="1" opacity="0.2"/>
-  </g>
-</svg>`,
-
-rocket: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="15" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feGaussianBlur in="d" stdDeviation="0.45"/>
-  </filter></defs>
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
-    <path d="M80,6 Q106,20 106,62 L106,100 Q94,110 80,110 Q66,110 54,100 L54,62 Q54,20 80,6 Z" stroke-width="3"/>
-    <path d="M80,6 Q108,22 108,64 L108,102" stroke-width="1.1" opacity="0.22"/>
-    <path d="M54,90 L34,114 L34,102 L54,100" stroke-width="2.8"/>
-    <path d="M106,90 L126,114 L126,102 L106,100" stroke-width="2.8"/>
-    <path d="M66,110 Q80,132 94,110" stroke-width="2.8"/>
-    <path d="M66,110 Q80,134 94,110" stroke-width="1.1" opacity="0.22"/>
-    <circle cx="80" cy="48" r="12" stroke-width="2.5"/>
-    <circle cx="80" cy="48" r="12" stroke-width="1" opacity="0.22" transform="translate(0.5,0.5)"/>
-  </g>
-</svg>`,
+  rocket: `<svg viewBox="0 0 160 160" fill="none" stroke="#2c2c2e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <defs><filter id="w" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="15"/><feDisplacementMap in="SourceGraphic" scale="7"/></filter></defs>
+    <g filter="url(#w)">
+      <path d="M82,20 Q65,45 62,95 L102,98 Q98,45 82,20 Z" />
+      <path d="M62,85 L42,112 L63,105 M102,88 L125,115 L101,108" />
+      <path d="M75,115 Q82,135 90,118" stroke-width="7.5" opacity="0.8" />
+      <path d="M78,65 Q80,55 88,68" opacity="0.4" />
+    </g>
+  </svg>`,
 };
 
-// ── Firebase SSE ──────────────────────────────────────────────────
 const wrap = document.getElementById('sketch-wrap');
+const emptyState = document.querySelector('.empty-state');
 let currentKey = null;
 let es = null;
 
 function showSketch(key) {
+  if (key === currentKey) return;
   currentKey = key;
-  wrap.innerHTML = key && SKETCHES[key] ? SKETCHES[key] : '';
+  
+  if (key && SKETCHES[key]) {
+    wrap.style.opacity = '0';
+    setTimeout(() => {
+      wrap.innerHTML = SKETCHES[key];
+      wrap.style.opacity = '1';
+      emptyState.style.display = 'none';
+    }, 100);
+  } else {
+    wrap.style.opacity = '0';
+    setTimeout(() => {
+      wrap.innerHTML = '';
+      emptyState.style.display = 'block';
+    }, 100);
+  }
 }
 
 function startListening() {
@@ -338,8 +270,8 @@ function resizeCanvas() {
   const area = document.getElementById('canvas-area');
   canvas.width = area.offsetWidth;
   canvas.height = area.offsetHeight;
-  ctx.strokeStyle = '#2c2c2c';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#2c2c2e';
+  ctx.lineWidth = 6;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 }
@@ -371,7 +303,6 @@ document.getElementById('erase-btn').addEventListener('click', () => {
   showSketch(null);
 });
 
-// ── Reset on tab show (re-read Firebase state) ────────────────────
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') startListening();
 });
