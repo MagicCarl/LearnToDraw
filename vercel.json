@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/receiver", "destination": "/receiver.html" }
+  ],
   "headers": [
     {
       "source": "/",
