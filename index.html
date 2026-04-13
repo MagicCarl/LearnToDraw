@@ -39,6 +39,12 @@
       border: 2px dashed #ddd; border-radius: 12px;
       background: #fafafa; touch-action: none; cursor: crosshair;
     }
+    #erase-drawing {
+      display: block; margin: 10px auto 0;
+      background: none; border: 1.5px solid #ddd; border-radius: 8px;
+      padding: 6px 18px; font-size: 13px; color: #aaa; cursor: pointer;
+    }
+    #erase-drawing:active { background: #f5f5f5; }
   </style>
 </head>
 <body>
@@ -53,6 +59,7 @@
 <div id="canvas-area">
   <p class="cue">Try to draw it here ✏️</p>
   <canvas id="drawing-canvas" width="600" height="420"></canvas>
+  <button id="erase-drawing">Erase</button>
 </div>
 
 <script>
@@ -211,6 +218,8 @@ canvas.addEventListener('mouseleave', () => { drawing = false; });
 canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); }, { passive: false });
 canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
 canvas.addEventListener('touchend', () => { drawing = false; });
+
+document.getElementById('erase-drawing').addEventListener('click', clearCanvas);
 </script>
 </body>
 </html>
