@@ -96,171 +96,210 @@ const FIREBASE_URL = 'https://magictrick-5fc12-default-rtdb.firebaseio.com';
 // Each uses wobbly bezier curves + ghost duplicate strokes for pencil feel.
 // ViewBox 0 0 160 150. stroke-linecap/join round throughout.
 
+// SVG displacement filter trick: feTurbulence + feDisplacementMap warps rendered pixels
+// with fractal noise, making every shape — circles, lines, everything — look genuinely hand-drawn.
+// Only one sketch is shown at a time so duplicate filter id="p" is safe.
 const SKETCHES = {
 
-// All sketches: wobbly cubic-bezier paths throughout — no <circle>, no <line>.
-// Ghost strokes (0.22–0.28 opacity) simulate pencil layering.
-// Slight asymmetry baked into every shape so nothing looks computer-generated.
-
 house: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M80,13 C65,29 43,48 18,75" stroke-width="3.2"/>
-    <path d="M79,14 C64,31 41,50 17,77" stroke-width="1.1" opacity="0.26"/>
-    <path d="M80,13 C96,30 118,49 142,75" stroke-width="3.2"/>
-    <path d="M81,14 C97,32 119,51 143,77" stroke-width="1.1" opacity="0.26"/>
-    <path d="M18,75 C17,98 19,120 19,141" stroke-width="3"/>
-    <path d="M142,75 C143,99 141,121 141,141" stroke-width="3"/>
-    <path d="M19,141 C55,142 104,141 141,141" stroke-width="3"/>
-    <path d="M17,74 C16,100 17,122 18,143 C57,144 103,143 142,143 C143,122 142,99 143,74" stroke-width="0.9" opacity="0.2"/>
-    <path d="M63,141 C62,122 62,108 65,98 C71,88 80,92 80,92 C80,92 89,88 95,98 C98,110 97,124 97,141" stroke-width="2.5"/>
-    <path d="M26,87 C25,97 26,106 27,106 C34,107 48,105 49,105 C50,95 49,86 48,86 C38,85 26,87 26,87" stroke-width="2.1"/>
-    <path d="M26,86 C25,97 26,107 27,107 L49,106" stroke-width="0.8" opacity="0.22"/>
-    <path d="M37,86 C37,87 37.5,106 37,106" stroke-width="1.9"/>
-    <path d="M26,96 C26,96 49,97 49,96.5" stroke-width="1.9"/>
-    <path d="M111,87 C110,97 111,106 112,106 C119,107 132,105 133,105 C134,95 133,86 132,86 C122,85 111,87 111,87" stroke-width="2.1"/>
-    <path d="M122,86 C122,87 122.5,106 122,106" stroke-width="1.9"/>
-    <path d="M111,96 C111,96 133,97 133,96.5" stroke-width="1.9"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M80,14 L19,73" stroke-width="3.2"/>
+    <path d="M80,14 L141,73" stroke-width="3.2"/>
+    <path d="M19,73 L19,138 L141,137 L141,73" stroke-width="3"/>
+    <path d="M20,72 L20,139 L140,138 L140,72" stroke-width="1" opacity="0.28"/>
+    <path d="M63,138 L63,98 Q71,88 80,93 Q89,88 97,98 L97,138" stroke-width="2.5"/>
+    <path d="M27,88 L27,103 L48,103 L48,88 Z" stroke-width="2.1"/>
+    <path d="M37.5,88 L37.5,103" stroke-width="1.9"/>
+    <path d="M27,95.5 L48,95.5" stroke-width="1.9"/>
+    <path d="M112,88 L112,103 L133,103 L133,88 Z" stroke-width="2.1"/>
+    <path d="M122.5,88 L122.5,103" stroke-width="1.9"/>
+    <path d="M112,95.5 L133,95.5" stroke-width="1.9"/>
   </g>
 </svg>`,
 
 flower: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round">
-    <path d="M80,62 C73,51 69,37 71,24 C72,14 80,11 80,11 C80,11 88,14 89,25 C91,38 87,52 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C73,72 69,87 71,100 C72,110 80,113 80,113 C80,113 88,110 89,99 C91,86 87,72 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C69,55 55,53 44,57 C35,60 33,69 34,74 C35,79 42,84 53,82 C65,79 74,68 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C91,55 105,53 116,57 C125,60 127,69 126,74 C125,79 118,84 107,82 C95,79 86,68 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C70,52 58,44 46,45 C37,46 32,54 34,60 C36,66 44,70 55,68 C66,66 75,64 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C90,52 102,44 114,45 C123,46 128,54 126,60 C124,66 116,70 105,68 C94,66 85,64 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C70,72 58,80 46,79 C37,78 32,70 34,64 C36,58 44,54 55,56 C66,58 75,60 80,62" stroke-width="2.5"/>
-    <path d="M80,62 C90,72 102,80 114,79 C123,78 128,70 126,64 C124,58 116,54 105,56 C94,58 85,60 80,62" stroke-width="2.5"/>
-    <path d="M80,48 C88,48 94,54 94,62 C94,70 88,76 80,76 C72,76 66,70 66,62 C66,54 72,48 80,48 Z" fill="#f5f0e8" stroke-width="2.8"/>
-    <path d="M81,49 C89,49 95,55 95,63 C95,71 89,77 80,77 C71,77 65,71 65,62" stroke-width="0.9" opacity="0.24"/>
-    <path d="M80,76 C79,90 80,108 80,128" stroke-width="2.5"/>
-    <path d="M80,105 C72,99 65,101 62,108" stroke-width="2"/>
-    <path d="M80,105 C88,99 95,101 98,108" stroke-width="2"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
+    <ellipse cx="80" cy="35" rx="13" ry="20" stroke-width="2.5"/>
+    <ellipse cx="80" cy="89" rx="13" ry="20" stroke-width="2.5"/>
+    <ellipse cx="49" cy="43" rx="13" ry="20" transform="rotate(-60 49 43)" stroke-width="2.5"/>
+    <ellipse cx="111" cy="43" rx="13" ry="20" transform="rotate(60 111 43)" stroke-width="2.5"/>
+    <ellipse cx="49" cy="81" rx="13" ry="20" transform="rotate(60 49 81)" stroke-width="2.5"/>
+    <ellipse cx="111" cy="81" rx="13" ry="20" transform="rotate(-60 111 81)" stroke-width="2.5"/>
+    <circle cx="80" cy="62" r="17" fill="#f5f0e8" stroke="#2c2c2c" stroke-width="2.8"/>
+    <circle cx="80" cy="62" r="17" stroke-width="1" opacity="0.25" transform="translate(1.5,1)"/>
+    <path d="M80,79 Q81,104 80,130" stroke-width="2.5"/>
+    <path d="M80,104 Q64,97 59,107" stroke-width="2"/>
+    <path d="M80,104 Q96,97 101,107" stroke-width="2"/>
   </g>
 </svg>`,
 
 tree: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M80,9 C100,9 122,18 128,40 C135,64 125,84 108,91 C97,97 80,94 80,94 C80,94 63,97 52,91 C35,84 25,64 32,40 C38,18 60,9 80,9 Z" stroke-width="3"/>
-    <path d="M80,9 C101,10 123,19 129,42 C136,66 126,86 109,93 C98,98 80,95 80,95" stroke-width="1.1" opacity="0.22"/>
-    <path d="M71,92 C70,109 70,123 71,141 C74,142 86,142 89,141 C90,123 90,109 89,92" stroke-width="2.8"/>
-    <path d="M70,91 C69,109 69,124 70,142 L90,142" stroke-width="1" opacity="0.2"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M80,10 Q118,14 124,44 Q130,78 108,90 Q96,100 80,94 Q64,100 52,90 Q30,78 36,44 Q42,14 80,10 Z" stroke-width="3"/>
+    <path d="M80,10 Q120,16 126,46 Q132,80 110,92" stroke-width="1" opacity="0.25"/>
+    <path d="M72,92 L72,138 L88,138 L88,92" stroke-width="2.8"/>
+    <path d="M71,91 L71,139 L89,139" stroke-width="1" opacity="0.2"/>
   </g>
 </svg>`,
 
 car: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M11,88 C10,99 11,109 12,117 C12,121 18,122 22,122 L138,121 C143,121 149,119 149,114 L149,88" stroke-width="3"/>
-    <path d="M10,87 C9,100 10,111 11,118 C11,122 18,123 22,123 L138,122" stroke-width="1" opacity="0.2"/>
-    <path d="M22,88 C27,78 36,59 43,52 C47,48 53,49 53,49 L107,49 C113,49 120,48 125,55 C131,63 138,79 138,88 Z" stroke-width="3"/>
-    <path d="M22,87 C27,77 37,58 44,51 C48,47 54,48 54,48 L106,48" stroke-width="1" opacity="0.2"/>
-    <path d="M38,122 C28,122 20,130 20,138 C20,144 27,149 38,149 C49,149 56,144 56,137 C56,130 48,122 38,122 Z" stroke-width="2.8"/>
-    <path d="M38,123 C27,123 19,131 19,139 C19,145 27,150 38,150" stroke-width="1" opacity="0.24"/>
-    <path d="M121,122 C111,122 103,130 103,138 C103,144 110,149 121,149 C132,149 139,144 139,137 C139,130 131,122 121,122 Z" stroke-width="2.8"/>
-    <path d="M121,123 C110,123 102,131 102,139 C102,145 110,150 121,150" stroke-width="1" opacity="0.24"/>
-    <path d="M44,55 C43,61 43,70 44,71 C52,72 71,71 72,71 C73,63 72,53 72,53 C60,52 44,55 44,55" stroke-width="2.2"/>
-    <path d="M89,53 C88,59 88,70 89,71 C97,72 115,71 116,71 C117,63 116,53 116,53 C104,52 89,53 89,53" stroke-width="2.2"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="2" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M12,88 L12,112 Q12,120 22,120 L138,120 Q148,120 148,112 L148,88" stroke-width="3"/>
+    <path d="M22,88 L34,56 Q37,50 46,50 L114,50 Q123,50 126,56 L138,88 Z" stroke-width="3"/>
+    <path d="M22,87 L35,55 Q38,49 47,49 L113,49" stroke-width="1" opacity="0.22"/>
+    <circle cx="40" cy="120" r="16" stroke-width="2.8"/>
+    <circle cx="40" cy="120" r="16" stroke-width="1" opacity="0.25" transform="translate(1.5,1)"/>
+    <circle cx="120" cy="120" r="16" stroke-width="2.8"/>
+    <circle cx="120" cy="120" r="16" stroke-width="1" opacity="0.25" transform="translate(-1,1)"/>
+    <path d="M44,54 L44,69 L72,69 L72,54 Z" stroke-width="2.2"/>
+    <path d="M88,54 L88,69 L116,69 L116,54 Z" stroke-width="2.2"/>
   </g>
 </svg>`,
 
 airplane: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9,73 C30,62 57,66 86,67 L142,67 C151,67 156,70 156,74 C156,78 151,81 142,81 L86,81 C57,82 30,86 9,75 Z" stroke-width="3"/>
-    <path d="M9,72 C30,61 57,65 86,66 L142,66 C152,66 157,70 157,74" stroke-width="1" opacity="0.2"/>
-    <path d="M32,67 C35,58 40,47 46,40 C50,37 57,38 65,39 C61,50 57,60 54,67" stroke-width="2.8"/>
-    <path d="M31,66 C35,57 41,45 47,39 C51,36 58,37 66,38" stroke-width="1" opacity="0.22"/>
-    <path d="M32,81 C35,90 40,101 46,108 C50,111 57,110 65,109 C61,98 57,88 54,81" stroke-width="2.8"/>
-    <path d="M113,67 C115,59 119,52 126,50 C130,48 135,50 133,55 C131,59 129,63 127,67" stroke-width="2.5"/>
-    <path d="M144,67 C149,67 156,70 156,74 C156,78 149,81 144,81 C139,81 134,78 134,74 C134,70 139,67 144,67 Z" fill="#2c2c2c" stroke-width="0.8"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="9" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M10,72 Q46,56 86,66 L142,66 Q154,66 154,74 Q154,82 142,82 L86,82 Q46,90 10,76 Z" stroke-width="3"/>
+    <path d="M10,72 Q46,56 86,66 L142,66 Q154,66 154,74" stroke-width="1" opacity="0.22"/>
+    <path d="M32,66 L46,40 L64,40 L54,66" stroke-width="2.8"/>
+    <path d="M31,67 L47,41 L65,41" stroke-width="1" opacity="0.22"/>
+    <path d="M32,82 L46,108 L64,108 L54,82" stroke-width="2.8"/>
+    <path d="M112,66 L118,52 L132,52 L126,66" stroke-width="2.5"/>
+    <circle cx="136" cy="74" r="7" fill="#2c2c2c"/>
   </g>
 </svg>`,
 
 star: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M80,9 C82,27 85,39 91,53 L149,56 C138,65 127,72 113,84 C117,100 121,115 125,138 C112,129 100,120 80,110 C60,120 47,129 35,137 C39,115 43,100 46,84 C32,72 21,65 11,56 L69,53 C75,39 78,27 80,9 Z" stroke-width="3"/>
-    <path d="M80,9 C82,28 86,40 92,54 L151,57" stroke-width="1" opacity="0.2"/>
-    <path d="M10,56 L68,53 C74,39 79,28 80,9" stroke-width="1" opacity="0.18"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="5" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M80,10 Q85,38 93,52 L148,54 Q126,72 112,84 Q120,114 124,136 Q102,120 80,108 Q58,120 36,136 Q40,114 48,84 Q34,72 12,54 L67,52 Q75,38 80,10 Z" stroke-width="3"/>
+    <path d="M80,10 Q85,40 94,53 L150,56" stroke-width="1" opacity="0.2"/>
+    <path d="M11,54 L68,52 Q75,38 80,10" stroke-width="1" opacity="0.18"/>
   </g>
 </svg>`,
 
 sun: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round">
-    <path d="M81,44 C95,44 107,57 107,74 C107,91 94,104 80,104 C66,104 53,91 53,74 C53,57 66,44 81,44 Z" stroke-width="3"/>
-    <path d="M81,45 C96,45 108,58 108,75 C108,92 95,105 80,105 C65,105 52,92 52,74" stroke-width="1" opacity="0.22"/>
-    <path d="M80,8 C80,8 81,16 80,26" stroke-width="2.8"/>
-    <path d="M80,122 C80,122 79,130 80,140" stroke-width="2.8"/>
-    <path d="M14,74 C14,74 22,73 32,74" stroke-width="2.8"/>
-    <path d="M128,74 C128,74 136,75 146,74" stroke-width="2.8"/>
-    <path d="M31,27 C31,27 38,34 44,41" stroke-width="2.8"/>
-    <path d="M116,107 C116,107 122,114 128,121" stroke-width="2.8"/>
-    <path d="M129,27 C129,27 122,34 116,41" stroke-width="2.8"/>
-    <path d="M44,107 C44,107 38,114 31,121" stroke-width="2.8"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="1" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
+    <circle cx="80" cy="74" r="30" stroke-width="3"/>
+    <circle cx="80" cy="74" r="30" stroke-width="1" opacity="0.25" transform="translate(1.5,0.5)"/>
+    <line x1="80" y1="10" x2="80" y2="28" stroke-width="2.8"/>
+    <line x1="80" y1="120" x2="80" y2="138" stroke-width="2.8"/>
+    <line x1="16" y1="74" x2="34" y2="74" stroke-width="2.8"/>
+    <line x1="126" y1="74" x2="144" y2="74" stroke-width="2.8"/>
+    <line x1="34" y1="28" x2="47" y2="41" stroke-width="2.8"/>
+    <line x1="113" y1="107" x2="126" y2="120" stroke-width="2.8"/>
+    <line x1="126" y1="28" x2="113" y2="41" stroke-width="2.8"/>
+    <line x1="47" y1="107" x2="34" y2="120" stroke-width="2.8"/>
   </g>
 </svg>`,
 
 heart: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M80,126 C60,110 33,91 19,67 C7,46 9,24 29,17 C45,11 63,18 80,43 C97,18 116,12 133,18 C152,26 152,48 140,68 C126,92 101,111 80,126 Z" stroke-width="3"/>
-    <path d="M80,126 C58,109 31,89 17,65 C5,44 7,22 28,15 C45,9 63,18 80,43" stroke-width="1.1" opacity="0.26"/>
-    <path d="M80,43 C97,18 117,11 134,17 C153,26 153,49 141,69 C127,93 102,112 80,126" stroke-width="1.1" opacity="0.26"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="8" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M80,124 Q46,96 20,66 Q6,28 36,20 Q56,14 80,42 Q104,14 124,20 Q154,28 140,66 Q114,96 80,124 Z" stroke-width="3"/>
+    <path d="M80,124 Q44,95 18,64 Q4,26 36,18" stroke-width="1.1" opacity="0.27"/>
+    <path d="M80,42 Q104,14 126,20 Q156,30 140,68" stroke-width="1.1" opacity="0.27"/>
   </g>
 </svg>`,
 
 smiley: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round">
-    <path d="M82,16 C103,15 135,33 135,74 C135,115 102,133 80,133 C58,133 25,115 25,73 C25,33 59,15 82,16 Z" stroke-width="3"/>
-    <path d="M82,17 C104,16 136,34 136,75 C136,116 103,134 80,134 C57,134 24,116 24,73" stroke-width="1.1" opacity="0.26"/>
-    <path d="M54,56 C50,56 46,59 46,63 C46,67 50,70 55,70 C60,70 64,67 63,63 C62,59 58,56 54,56 Z" fill="#2c2c2c" stroke-width="0.6"/>
-    <path d="M105,57 C101,57 97,60 97,64 C97,68 101,71 106,71 C110,71 114,68 113,64 C112,60 109,57 105,57 Z" fill="#2c2c2c" stroke-width="0.6"/>
-    <path d="M44,91 C54,107 67,117 80,119 C93,117 106,107 116,91" stroke-width="3"/>
-    <path d="M44,91 C54,109 67,119 80,121 C93,119 106,109 116,91" stroke-width="1.1" opacity="0.26"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="4" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
+    <circle cx="80" cy="74" r="58" stroke-width="3"/>
+    <circle cx="80" cy="74" r="58" stroke-width="1.1" opacity="0.25" transform="translate(1.5,1)"/>
+    <circle cx="58" cy="60" r="6" fill="#2c2c2c"/>
+    <circle cx="102" cy="60" r="6" fill="#2c2c2c"/>
+    <path d="M46,90 Q80,118 114,90" stroke-width="3"/>
+    <path d="M46,90 Q80,120 114,90" stroke-width="1.1" opacity="0.25"/>
   </g>
 </svg>`,
 
 clock: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round">
-    <path d="M82,16 C103,15 135,33 135,74 C135,115 102,133 80,133 C58,133 25,115 25,73 C25,33 59,15 82,16 Z" stroke-width="3"/>
-    <path d="M82,17 C104,16 136,34 136,75 C136,116 103,134 80,134 C57,134 24,116 24,73" stroke-width="1.1" opacity="0.26"/>
-    <path d="M80,74 C77,66 70,55 55,37" stroke-width="3.5"/>
-    <path d="M80,74 C89,68 103,63 114,56" stroke-width="2.8"/>
-    <path d="M80,68 C83,68 86,71 86,74 C86,77 83,80 80,80 C77,80 74,77 74,74 C74,71 77,68 80,68 Z" fill="#2c2c2c"/>
-    <path d="M81,19 C81,19 81.5,24 81,29" stroke-width="2.5"/>
-    <path d="M79,119 C79,119 78.5,124 79,131" stroke-width="2.5"/>
-    <path d="M28,74 C28,74 32,73.5 37,74" stroke-width="2.5"/>
-    <path d="M123,74 C123,74 128,74.5 132,74" stroke-width="2.5"/>
-    <path d="M38,31 C38,31 41,35 44,39" stroke-width="2"/>
-    <path d="M122,31 C122,31 119,35 116,39" stroke-width="2"/>
-    <path d="M38,117 C38,117 41,113 44,109" stroke-width="2"/>
-    <path d="M122,117 C122,117 119,113 116,109" stroke-width="2"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="6" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
+    <circle cx="80" cy="74" r="58" stroke-width="3"/>
+    <circle cx="80" cy="74" r="58" stroke-width="1.1" opacity="0.25" transform="translate(1,1)"/>
+    <line x1="80" y1="74" x2="54" y2="38" stroke-width="3.5"/>
+    <line x1="80" y1="74" x2="112" y2="56" stroke-width="2.8"/>
+    <circle cx="80" cy="74" r="5" fill="#2c2c2c"/>
+    <line x1="80" y1="17" x2="80" y2="26" stroke-width="2.5"/>
+    <line x1="80" y1="122" x2="80" y2="131" stroke-width="2.5"/>
+    <line x1="23" y1="74" x2="32" y2="74" stroke-width="2.5"/>
+    <line x1="128" y1="74" x2="137" y2="74" stroke-width="2.5"/>
+    <line x1="38" y1="30" x2="44" y2="36" stroke-width="2"/>
+    <line x1="122" y1="30" x2="116" y2="36" stroke-width="2"/>
+    <line x1="38" y1="118" x2="44" y2="112" stroke-width="2"/>
+    <line x1="122" y1="118" x2="116" y2="112" stroke-width="2"/>
   </g>
 </svg>`,
 
 stickman: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round">
-    <path d="M81,4 C93,4 100,12 100,22 C100,32 93,40 80,40 C67,40 60,32 60,22 C60,12 67,4 81,4 Z" stroke-width="3"/>
-    <path d="M81,5 C94,5 101,13 101,23 C101,33 94,41 80,41 C66,41 59,33 59,22" stroke-width="1.1" opacity="0.25"/>
-    <path d="M80,40 C80,56 81,72 80,94" stroke-width="3"/>
-    <path d="M79,40 C79,57 80,73 79,95" stroke-width="0.9" opacity="0.2"/>
-    <path d="M80,58 C70,52 57,44 41,36" stroke-width="3"/>
-    <path d="M80,58 C90,52 103,46 119,38" stroke-width="3"/>
-    <path d="M80,94 C74,108 64,121 53,137" stroke-width="3"/>
-    <path d="M79,93 C73,108 63,122 52,138" stroke-width="0.9" opacity="0.2"/>
-    <path d="M80,94 C86,108 96,121 107,137" stroke-width="3"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="12" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" filter="url(#p)">
+    <circle cx="80" cy="22" r="18" stroke-width="3"/>
+    <circle cx="80" cy="22" r="18" stroke-width="1.1" opacity="0.25" transform="translate(1,0.5)"/>
+    <line x1="80" y1="40" x2="80" y2="94" stroke-width="3"/>
+    <line x1="79" y1="40" x2="79" y2="94" stroke-width="1" opacity="0.2"/>
+    <line x1="80" y1="58" x2="44" y2="38" stroke-width="3"/>
+    <line x1="80" y1="58" x2="116" y2="38" stroke-width="3"/>
+    <line x1="80" y1="94" x2="52" y2="132" stroke-width="3"/>
+    <line x1="80" y1="94" x2="108" y2="132" stroke-width="3"/>
+    <line x1="81" y1="95" x2="53" y2="133" stroke-width="1" opacity="0.2"/>
   </g>
 </svg>`,
 
 rocket: `<svg viewBox="0 0 160 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M80,5 C97,14 109,33 109,61 L108,101 C97,112 80,112 80,112 C80,112 63,112 52,101 L51,61 C51,33 63,14 80,5 Z" stroke-width="3"/>
-    <path d="M80,5 C98,15 110,34 110,62 L109,103" stroke-width="1.1" opacity="0.22"/>
-    <path d="M51,89 C43,98 35,109 30,120 C30,120 31,107 33,101 C37,96 45,96 51,100" stroke-width="2.8"/>
-    <path d="M109,89 C117,98 125,109 130,120 C130,120 129,107 127,101 C123,96 115,96 109,100" stroke-width="2.8"/>
-    <path d="M63,112 C67,126 76,139 80,146 C84,139 93,126 97,112" stroke-width="2.8"/>
-    <path d="M63,112 C67,128 76,141 80,148 C84,141 93,128 97,112" stroke-width="1.1" opacity="0.22"/>
-    <path d="M81,37 C89,37 96,43 96,50 C96,57 89,63 80,63 C71,63 64,57 64,50 C64,43 71,37 81,37 Z" stroke-width="2.5"/>
-    <path d="M81,38 C90,38 97,44 97,51 C97,58 90,64 80,64 C70,64 63,58 63,50" stroke-width="0.9" opacity="0.22"/>
+  <defs><filter id="p" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="15" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs>
+  <g stroke="#2c2c2c" stroke-linecap="round" stroke-linejoin="round" filter="url(#p)">
+    <path d="M80,6 Q106,20 106,62 L106,100 Q94,110 80,110 Q66,110 54,100 L54,62 Q54,20 80,6 Z" stroke-width="3"/>
+    <path d="M80,6 Q108,22 108,64 L108,102" stroke-width="1.1" opacity="0.22"/>
+    <path d="M54,90 L34,114 L34,102 L54,100" stroke-width="2.8"/>
+    <path d="M106,90 L126,114 L126,102 L106,100" stroke-width="2.8"/>
+    <path d="M66,110 Q80,132 94,110" stroke-width="2.8"/>
+    <path d="M66,110 Q80,134 94,110" stroke-width="1.1" opacity="0.22"/>
+    <circle cx="80" cy="48" r="12" stroke-width="2.5"/>
+    <circle cx="80" cy="48" r="12" stroke-width="1" opacity="0.22" transform="translate(0.5,0.5)"/>
   </g>
 </svg>`,
 };
