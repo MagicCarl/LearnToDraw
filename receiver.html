@@ -69,10 +69,11 @@
     }
 
     #erase-btn {
-      background: transparent; color: var(--accent);
+      background: transparent; color: #555;
       border: none; font-size: 17px; font-weight: 400;
-      cursor: pointer;
+      cursor: pointer; transition: color 0.3s;
     }
+    #erase-btn.ready { color: #30d158; }
     #erase-btn:active { opacity: 0.4; }
 
   </style>
@@ -228,9 +229,13 @@ function showSketch(key) {
   }
 }
 
+const eraseBtn = document.getElementById('erase-btn');
+
 function startListening() {
   if (es) es.close();
   es = new EventSource(`${FIREBASE_URL}/learnToDraw/selection.json`);
+
+  es.onopen = () => { eraseBtn.classList.add('ready'); };
 
   es.addEventListener('put', e => {
     try {
@@ -247,6 +252,7 @@ function startListening() {
   });
 
   es.onerror = () => {
+    eraseBtn.classList.remove('ready');
     es.close();
     setTimeout(startListening, 3000);
   };
