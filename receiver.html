@@ -75,11 +75,6 @@
     }
     #erase-btn:active { opacity: 0.4; }
 
-    .empty-state {
-      color: #999; font-size: 15px;
-      position: absolute; pointer-events: none;
-      text-align: center; font-weight: 400;
-    }
   </style>
 </head>
 <body>
@@ -91,8 +86,7 @@
   </div>
 
   <div id="canvas-area">
-    <div class="empty-state">Waiting for prediction...</div>
-    <div id="sketch-wrap"></div>
+<div id="sketch-wrap"></div>
     <canvas id="drawing-canvas"></canvas>
   </div>
 
@@ -213,7 +207,6 @@ const SKETCHES = {
 };
 
 const wrap = document.getElementById('sketch-wrap');
-const emptyState = document.querySelector('.empty-state');
 let currentKey = null;
 let es = null;
 
@@ -226,13 +219,11 @@ function showSketch(key) {
     setTimeout(() => {
       wrap.innerHTML = SKETCHES[key];
       wrap.style.opacity = '1';
-      emptyState.style.display = 'none';
     }, 100);
   } else {
     wrap.style.opacity = '0';
     setTimeout(() => {
       wrap.innerHTML = '';
-      emptyState.style.display = 'block';
     }, 100);
   }
 }
